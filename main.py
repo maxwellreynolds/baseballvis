@@ -8,7 +8,7 @@ from bokeh.models.widgets import CheckboxGroup, Tabs, RadioGroup
 from bokeh.io import curdoc
 
 
-#To run server: bokeh serve --show main.py
+#To run server: bokeh serve --show main.py#
 
 
 playersDict={}          #key:(first name, last name, debut) value: playerID

@@ -21,3 +21,5 @@ For choosing the statistic to view, make sure to type the corresponding number i
 Absolute year plots the players' statistics by the true year on the X axis (i.e. 1983)
 Career year plots the players' statistics by sequential years in their careers beginning at 0 for the players' rookie year.
 Career year allows for a feasible comparison of players from different time periods.
+
+Raw data was obtained from the Lahman Database: http://www.seanlahman.com/

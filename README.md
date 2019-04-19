@@ -13,7 +13,7 @@ To use the program:
 5. To change players, restart the server
 
 
-If you are unfamiliar with baseball players, try using Barry Bonds and Hank Aarom as Player 1 and Player 2
+If you are unfamiliar with baseball players, try using Barry Bonds and Hank Aaron as Player 1 and Player 2
 
 For choosing the statistic to view, make sure to type the corresponding number i.e. type 8 to view Home Runs (don't type "Home Runs").
 

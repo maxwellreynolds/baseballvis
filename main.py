@@ -13,8 +13,6 @@ batterdf=pd.read_csv('completeBattingNoStints.csv')
 pitcherdf=pd.read_csv('completePitchingNoStints.csv')
 playerinfodf=pd.read_csv('People.csv')
 
-playersDict={}          #key:(first name, last name, debut) value: playerID
-playersDict_reverse={}  #key: playerID, value: (first and last in one string)
 
 battersAllStats={}      #key is ID, year; definition is all other stats
 pitchersAllStats={}     #key is ID, year; definition is all other stats
@@ -393,7 +391,8 @@ def all_stats_dict_to_src_pitcher(stats, interest):
 
 #Plots 1 batter and 1 stat, detailed hover shows year, games, avg, HR, RBI
 def plot_1batter_1stat(playerID, stat):
-  player_name = playersDict_reverse[playerID]
+  player_name = playerinfodf[playerinfodf['playerID']==playerID].iloc[0][['nameFirst', 'nameLast']]
+  player_name=player_name[0]+ ' ' + player_name[1]
   stat_name = getBattingStat(stat)
   src = all_stats_dict_to_src_batter(get_batter_all_stats(playerID), stat)
   p=figure(plot_width=800, plot_height=650, title = player_name+' '+stat_name, x_axis_label= "Year", y_axis_label=stat_name)
@@ -440,7 +439,8 @@ def plot_1batter_1stat(playerID, stat):
 
 #Plots 1 pitcher and 1 stat, detailed hover shows year, wins, losses, ERA, K's, Saves
 def plot_1pitcher_1stat(playerID, stat):
-  player_name = playersDict_reverse[playerID]
+  player_name = playerinfodf[playerinfodf['playerID']==playerID].iloc[0][['nameFirst', 'nameLast']]
+  player_name=player_name[0]+ ' ' + player_name[1]
   stat_name = getPitchingStat(stat)
   src = all_stats_dict_to_src_pitcher(get_pitcher_all_stats(playerID), stat)
   p=figure(plot_width=800, plot_height=650, title = player_name+' '+stat_name, x_axis_label= "Year", y_axis_label=stat_name)
@@ -493,8 +493,12 @@ def plot_1pitcher_1stat(playerID, stat):
 
 #Plots 2 batters and 1 stat, detailed hover shows year, games, avg, HR, RBI
 def plot_2batter_1stat(playerID1, playerID2, stat):
-  player1_name = playersDict_reverse[playerID1]
-  player2_name = playersDict_reverse[playerID2]
+  player1_name = playerinfodf[playerinfodf['playerID']==playerID1].iloc[0][['nameFirst', 'nameLast']]
+  player1_name=player1_name[0]+ ' ' + player1_name[1]
+  player2_name = playerinfodf[playerinfodf['playerID']==playerID2].iloc[0][['nameFirst', 'nameLast']]
+  player2_name=player2_name[0]+ ' ' + player2_name[1]
+
+
   stat_name = getBattingStat(stat)
   src1 = all_stats_dict_to_src_batter(get_batter_all_stats(playerID1), stat)
   src2 = all_stats_dict_to_src_batter(get_batter_all_stats(playerID2), stat)
@@ -546,8 +550,10 @@ def plot_2batter_1stat(playerID1, playerID2, stat):
 
 #Plots 2 pitchers and 1 stat, detailed hover shows year, wins, losses, ERA, K's, Saves
 def plot_2pitcher_1stat(playerID1, playerID2, stat):
-  player1_name = playersDict_reverse[playerID1]
-  player2_name = playersDict_reverse[playerID2]
+  player1_name = playerinfodf[playerinfodf['playerID']==playerID1].iloc[0][['nameFirst', 'nameLast']]
+  player1_name=player1_name[0]+ ' ' + player1_name[1]
+  player2_name = playerinfodf[playerinfodf['playerID']==playerID2].iloc[0][['nameFirst', 'nameLast']]
+  player2_name=player2_name[0]+ ' ' + player2_name[1]
   stat_name = getPitchingStat(stat)
   src1 = all_stats_dict_to_src_pitcher(get_pitcher_all_stats(playerID1), stat)
   src2 = all_stats_dict_to_src_pitcher(get_pitcher_all_stats(playerID2), stat)
@@ -607,8 +613,10 @@ def plot_2pitcher_1stat(playerID1, playerID2, stat):
 #Plots 2 batters and 1 stat, detailed hover shows year, games, avg, HR, RBI
 #Plots by career year rather than absolute year (i.e. year 0 is rookie year)
 def plot_2batter_1stat_career(playerID1, playerID2, stat):
-  player1_name = playersDict_reverse[playerID1]
-  player2_name = playersDict_reverse[playerID2]
+  player1_name = playerinfodf[playerinfodf['playerID']==playerID1].iloc[0][['nameFirst', 'nameLast']]
+  player1_name=player1_name[0]+ ' ' + player1_name[1]
+  player2_name = playerinfodf[playerinfodf['playerID']==playerID2].iloc[0][['nameFirst', 'nameLast']]
+  player2_name=player2_name[0]+ ' ' + player2_name[1]
   stat_name = getBattingStat(stat)
   src1 = all_stats_dict_to_src_batter(get_batter_all_stats(playerID1), stat)
   src2 = all_stats_dict_to_src_batter(get_batter_all_stats(playerID2), stat)
@@ -661,8 +669,10 @@ def plot_2batter_1stat_career(playerID1, playerID2, stat):
 #Plots 2 pitchers and 1 stat, detailed hover shows year, wins, losses, ERA, K's, Saves
 #Plots by career year rather than absolute year (i.e. year 0 is rookie year)
 def plot_2pitcher_1stat_career(playerID1, playerID2, stat):
-  player1_name = playersDict_reverse[playerID1]
-  player2_name = playersDict_reverse[playerID2]
+  player1_name = playerinfodf[playerinfodf['playerID']==playerID1].iloc[0][['nameFirst', 'nameLast']]
+  player1_name=player1_name[0]+ ' ' + player1_name[1]
+  player2_name = playerinfodf[playerinfodf['playerID']==playerID2].iloc[0][['nameFirst', 'nameLast']]
+  player2_name=player2_name[0]+ ' ' + player2_name[1]
   stat_name = getPitchingStat(stat)
   src1 = all_stats_dict_to_src_pitcher(get_pitcher_all_stats(playerID1), stat)
   src2 = all_stats_dict_to_src_pitcher(get_pitcher_all_stats(playerID2), stat)
@@ -722,15 +732,6 @@ def plot_2pitcher_1stat_career(playerID1, playerID2, stat):
 
 
 def load_data():
-  #fills playersDict{} and playersDict_reverse{}
-
-  with open('People.csv', mode='r') as batting_info:
-    reader=csv.DictReader(batting_info)
-    for row in reader:
-      playersDict[(row['nameLast'], row['nameFirst'], row['debut'])] = row['playerID']
-      playersDict_reverse[row['playerID']]=row['nameFirst'] + ' ' + row['nameLast']
-
-
   #fills battersAllStats{}
   with open ('completeBattingNoStints.csv', mode='r') as batter_stats:
     reader=csv.DictReader(batter_stats)

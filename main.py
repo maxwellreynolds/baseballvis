@@ -1,6 +1,6 @@
 import csv
 from bokeh.plotting import figure, output_file, show
-import pandas
+import pandas as pd
 from bokeh.models import ColumnDataSource, HoverTool, WheelZoomTool, Panel
 from bokeh.layouts import widgetbox
 from bokeh.layouts import column, row, WidgetBox
@@ -9,7 +9,9 @@ from bokeh.io import curdoc
 
 
 #To run server: bokeh serve --show main.py
-
+batterdf=pd.read_csv('completeBattingNoStints.csv')
+pitcherdf=pd.read_csv('completePitchingNoStints.csv')
+playerinfodf=pd.read_csv('People.csv')
 
 playersDict={}          #key:(first name, last name, debut) value: playerID
 playersDict_reverse={}  #key: playerID, value: (first and last in one string)
@@ -87,7 +89,7 @@ def iint(x):
     return 0
   else:
     return int(x)
-    
+
 #same as float function but returns 0 if csv field is empty
 def ffloat(x):
   if x == '':
@@ -95,10 +97,10 @@ def ffloat(x):
   else:
     return float(x)
 
-#used for AB in batting average calculation so that divide-by-0 not caused
+#helper used for AB in batting average calculation so that divide-by-0 not caused
 def noZero(x):
   if x == '0':
-    return 1 
+    return 1
   return int(x)
 
 
@@ -201,7 +203,7 @@ def getPitchingStat(num):
     return 'Sacrifice Hits'
   if num == 25:
     return 'Ground into Double Play'
-  
+
 
 
 #Prints out the list of codes for stat definitions when asking user what to graph
@@ -210,32 +212,30 @@ def printBattingStats():
     print(str(i) + " = " + getBattingStat(i))
 
 def printPitchingStats():
-  for i in range(2, 26): 
+  for i in range(2, 26):
     print(str(i) + " = " + getPitchingStat(i))
 
-  
+
 
 #input last name and first name
 #returns the playerid
 #if multiple players with same name, asks user based on debut date
 def search_for_player(lastname, firstname):
-  lastname=lastname.capitalize()
-  firstname=firstname.capitalize()
-  potential_match_list=[]
-  for akey in playersDict.keys():
-    if akey[0] == lastname and akey[1] == firstname:
-      potential_match_list.append((playersDict[akey], akey[2]))
-  if len(potential_match_list) == 1:
-    return potential_match_list[0]
-  else:
-    for match in potential_match_list:
-      inp=input("Was it " + firstname + ' ' + lastname + " who debuted in " + match[1] + "? (y/n)")
-      if inp == 'y' or inp == 'Y':
-        return match
-  return None
+    lastname=lastname.capitalize()
+    firstname=firstname.capitalize()
+    matches_df = playerinfodf[(playerinfodf['nameFirst']==firstname) & (playerinfodf['nameLast']==lastname)]
+    if matches_df.shape[0]==1:
+        return matches_df.iloc[0]['playerID']
+    else:
+        for i in range(matches_df.shape[0]):
+            p=matches_df.iloc[i]
+            inp=input('Was it ' + p['nameFirst'] + ' ' + p['nameLast'] + ' who debuted in ' + p['debut']+'?')
+            if inp=='y' or inp == 'Y':
+                return p['playerID']
+    return None
 
- 
-#Returns a dictionary where key is the year, value is the player's stats in the year in list form 
+
+#Returns a dictionary where key is the year, value is the player's stats in the year in list form
 def get_batter_all_stats(playerID):
   yearlyStat = {}
   for akey in battersAllStats.keys():
@@ -245,8 +245,8 @@ def get_batter_all_stats(playerID):
       for i in range(2, 19):
         yearlyStat[iint(akey[1])][i]= iint(yearlyStat[iint(akey[1])][i])
       yearlyStat[iint(akey[1])][19] = yearlyStat[iint(akey[1])][19] #sets batting average
-      yearlyStat[iint(akey[1])][20] = yearlyStat[int(akey[1])][20]     
-  return yearlyStat  
+      yearlyStat[iint(akey[1])][20] = yearlyStat[int(akey[1])][20]
+  return yearlyStat
 
 #Returns a dictionary where key is year, value is player's stats in the year in list form
 def get_pitcher_all_stats(playerID):
@@ -261,9 +261,9 @@ def get_pitcher_all_stats(playerID):
       yearlyStat[iint(akey[1])][16] = yearlyStat[iint(akey[1])][16] #sets ERA
       for i in range(17, 27):
         yearlyStat[iint(akey[1])][i]= iint(yearlyStat[iint(akey[1])][i])
-      yearlyStat[iint(akey[1])][27] = yearlyStat[int(akey[1])][27]     
-  return yearlyStat  
-  
+      yearlyStat[iint(akey[1])][27] = yearlyStat[int(akey[1])][27]
+  return yearlyStat
+
 
 #Takes in a dictionary of year:stats, converts it to a ColumnDataSource, each column is year or stat number, rows are years
 #Skips the pandas dataframe step
@@ -317,7 +317,7 @@ def all_stats_dict_to_src_batter(stats, interest):
     data['CareerYear'].append(season[20])
     data['interest'].append(data[str(interest)][interest_count])
     interest_count += 1
-    
+
   src=ColumnDataSource(data)
   return src
 
@@ -399,13 +399,13 @@ def plot_1batter_1stat(playerID, stat):
   p=figure(plot_width=800, plot_height=650, title = player_name+' '+stat_name, x_axis_label= "Year", y_axis_label=stat_name)
   circle = p.circle(x='Year', y='interest', source=src, size=8, color='green', alpha=0.8, legend=player_name)
   line = p.line(x='Year', y='interest', source=src, line_width=3, line_color='green')
-  
+
   def update(attr, old, new):
     new_src = all_stats_dict_to_src_batter(get_batter_all_stats(playerID), new+2)
     src.data.update(new_src.data)
     p.title.text=player_name+' '+getBattingStat(new+2)
     p.yaxis.axis_label=getBattingStat(new+2)
-    
+
     if(new+2==2):
       p.add_tools(HoverTool(tooltips=[(getBattingStat(new+2),'@' + str(new+2)), ('Year', '@Year'), ('Average', '@' + str(19)), ('HR', '@' + str(8)), ('RBI', '@' + str(9))]))
     elif (new+2 == 19):
@@ -417,7 +417,7 @@ def plot_1batter_1stat(playerID, stat):
     else:
       p.add_tools(HoverTool(tooltips=[(getBattingStat(new+2),'@' + str(new+2)), ('Year', '@Year'), ('Average', '@' + str(19)), ('HR', '@' + str(8)), ('RBI', '@' + str(9)), ('Games', '@' + str(2))]))
 
-  stat_selection = RadioGroup(labels=radio_list_batting, active=stat-2)  
+  stat_selection = RadioGroup(labels=radio_list_batting, active=stat-2)
   stat_selection.on_change('active', update)
 
   if(stat==2):
@@ -445,16 +445,16 @@ def plot_1pitcher_1stat(playerID, stat):
   src = all_stats_dict_to_src_pitcher(get_pitcher_all_stats(playerID), stat)
   p=figure(plot_width=800, plot_height=650, title = player_name+' '+stat_name, x_axis_label= "Year", y_axis_label=stat_name)
   p.circle(x='Year', y='interest', source=src, size=8, color='green', alpha=0.8, legend=player_name)
-  p.line(x='Year', y='interest', source=src, line_width=3, line_color='green') 
-  
-  
-  
+  p.line(x='Year', y='interest', source=src, line_width=3, line_color='green')
+
+
+
   def update(attr, old, new):
     new_src = all_stats_dict_to_src_pitcher(get_pitcher_all_stats(playerID), new+2)
     src.data.update(new_src.data)
     p.title.text=player_name+' '+getPitchingStat(new+2)
     p.yaxis.axis_label=getPitchingStat(new+2)
-    
+
     if(new+2 == 2):
       p.add_tools(HoverTool(tooltips=[(getPitchingStat(new+2),'@' + str(new+2)), ('Year', '@Year'), ('Losses', '@' + str(3)), ('ERA', '@' + str(16)), ('Strikeouts', '@' + str(14)), ('Saves', '@' + str(8))]))
     elif(new+2 == 3):
@@ -467,10 +467,10 @@ def plot_1pitcher_1stat(playerID, stat):
       p.add_tools(HoverTool(tooltips=[(getPitchingStat(new+2),'@' + str(new+2)), ('Year', '@Year'), ('Wins', '@' + str(2)), ('Losses', '@' + str(3)), ('ERA', '@' + str(16)), ('Saves', '@' + str(8))]))
     else:
       p.add_tools(HoverTool(tooltips=[(getPitchingStat(new+2),'@' + str(new+2)), ('Year', '@Year'), ('Wins', '@' + str(2)), ('Losses', '@' + str(3)), ('ERA', '@' + str(16)), ('Strikeouts', '@' + str(14)), ('Saves', '@' + str(8))]))
-  
-  stat_selection = RadioGroup(labels=radio_list_pitching, active=stat-2)  
+
+  stat_selection = RadioGroup(labels=radio_list_pitching, active=stat-2)
   stat_selection.on_change('active', update)
-  
+
   if(stat == 2):
     hover = HoverTool(tooltips=[(stat_name,'@' + str(stat)), ('Year', '@Year'), ('Losses', '@' + str(3)), ('ERA', '@' + str(16)), ('Strikeouts', '@' + str(14)), ('Saves', '@' + str(8))])
   elif(stat == 3):
@@ -483,7 +483,7 @@ def plot_1pitcher_1stat(playerID, stat):
     hover = HoverTool(tooltips=[(stat_name,'@' + str(stat)), ('Year', '@Year'), ('Wins', '@' + str(2)), ('Losses', '@' + str(3)), ('ERA', '@' + str(16)), ('Saves', '@' + str(8))])
   else:
     hover = HoverTool(tooltips=[(stat_name,'@' + str(stat)), ('Year', '@Year'), ('Wins', '@' + str(2)), ('Losses', '@' + str(3)), ('ERA', '@' + str(16)), ('Strikeouts', '@' + str(14)), ('Saves', '@' + str(8))])
-        
+
   p.add_tools(hover)
   controls = WidgetBox(stat_selection)
   layout = row(controls, p)
@@ -503,7 +503,7 @@ def plot_2batter_1stat(playerID1, playerID2, stat):
   p.line(x='Year', y='interest', source=src1, line_width=3, line_color='green')
   p.circle(x='Year', y='interest', source=src2, size=8, color='blue', alpha=0.8, legend=player2_name)
   p.line(x='Year', y='interest', source=src2, line_width=3, line_color='blue')
-  
+
   def update(attr, old, new):
     new_src1 = all_stats_dict_to_src_batter(get_batter_all_stats(playerID1), new+2)
     new_src2 = all_stats_dict_to_src_batter(get_batter_all_stats(playerID2), new+2)
@@ -511,7 +511,7 @@ def plot_2batter_1stat(playerID1, playerID2, stat):
     src2.data.update(new_src2.data)
     p.title.text=player1_name+' and ' + player2_name+ ' ' + getBattingStat(new+2)
     p.yaxis.axis_label=getBattingStat(new+2)
-  
+
     if(new+2==2):
       p.add_tools(HoverTool(tooltips=[(getBattingStat(new+2),'@' + str(new+2)), ('Year', '@Year'), ('Average', '@' + str(19)), ('HR', '@' + str(8)), ('RBI', '@' + str(9))]))
     elif (new+2 == 19):
@@ -522,11 +522,11 @@ def plot_2batter_1stat(playerID1, playerID2, stat):
       p.add_tools(HoverTool(tooltips=[(getBattingStat(new+2),'@' + str(new+2)), ('Year', '@Year'), ('Avg', '@' + str(19)), ('HR', '@' + str(8)), ('Games', '@' + str(2))]))
     else:
       p.add_tools(HoverTool(tooltips=[(getBattingStat(new+2),'@' + str(new+2)), ('Year', '@Year'), ('Average', '@' + str(19)), ('HR', '@' + str(8)), ('RBI', '@' + str(9)), ('Games', '@' + str(2))]))
-  
-  
-  stat_selection = RadioGroup(labels=radio_list_batting, active=stat-2)  
-  stat_selection.on_change('active', update)  
-  
+
+
+  stat_selection = RadioGroup(labels=radio_list_batting, active=stat-2)
+  stat_selection.on_change('active', update)
+
   if(stat==2):
     hover = HoverTool(tooltips=[(stat_name,'@' + str(stat)), ('Year', '@Year'), ('Average', '@' + str(19)), ('HR', '@' + str(8)), ('RBI', '@' + str(9))])
   elif (stat == 19):
@@ -553,11 +553,11 @@ def plot_2pitcher_1stat(playerID1, playerID2, stat):
   src2 = all_stats_dict_to_src_pitcher(get_pitcher_all_stats(playerID2), stat)
   p=figure(plot_width=800, plot_height=650, title = player1_name+' and ' + player2_name+ ' ' + stat_name, x_axis_label= "Year", y_axis_label=stat_name)
   p.circle(x='Year', y='interest', source=src1, size=8, color='green', alpha=0.8, legend=player1_name)
-  p.line(x='Year', y='interest', source=src1, line_width=3, line_color='green') 
+  p.line(x='Year', y='interest', source=src1, line_width=3, line_color='green')
   p.circle(x='Year', y='interest', source=src2, size=8, color='blue', alpha=0.8, legend=player2_name)
-  p.line(x='Year', y='interest', source=src2, line_width=3, line_color='blue')  
-  
-  
+  p.line(x='Year', y='interest', source=src2, line_width=3, line_color='blue')
+
+
   def update(attr, old, new):
     new_src1 = all_stats_dict_to_src_pitcher(get_pitcher_all_stats(playerID1), new+2)
     new_src2 = all_stats_dict_to_src_pitcher(get_pitcher_all_stats(playerID2), new+2)
@@ -566,7 +566,7 @@ def plot_2pitcher_1stat(playerID1, playerID2, stat):
     p.title.text=player1_name+' and ' + player2_name+ ' ' + getPitchingStat(new+2)
     p.yaxis.axis_label=getPitchingStat(new+2)
 
-    
+
     if(new+2 == 2):
       p.add_tools(HoverTool(tooltips=[(getPitchingStat(new+2),'@' + str(new+2)), ('Year', '@Year'), ('Losses', '@' + str(3)), ('ERA', '@' + str(16)), ('Strikeouts', '@' + str(14)), ('Saves', '@' + str(8))]))
     elif(new+2 == 3):
@@ -579,10 +579,10 @@ def plot_2pitcher_1stat(playerID1, playerID2, stat):
       p.add_tools(HoverTool(tooltips=[(getPitchingStat(new+2),'@' + str(new+2)), ('Year', '@Year'), ('Wins', '@' + str(2)), ('Losses', '@' + str(3)), ('ERA', '@' + str(16)), ('Saves', '@' + str(8))]))
     else:
       p.add_tools(HoverTool(tooltips=[(getPitchingStat(new+2),'@' + str(new+2)), ('Year', '@Year'), ('Wins', '@' + str(2)), ('Losses', '@' + str(3)), ('ERA', '@' + str(16)), ('Strikeouts', '@' + str(14)), ('Saves', '@' + str(8))]))
-  
-  stat_selection = RadioGroup(labels=radio_list_pitching, active=stat-2)  
+
+  stat_selection = RadioGroup(labels=radio_list_pitching, active=stat-2)
   stat_selection.on_change('active', update)
-  
+
   if(stat == 2):
     hover = HoverTool(tooltips=[(stat_name,'@' + str(stat)), ('Year', '@Year'), ('Losses', '@' + str(3)), ('ERA', '@' + str(16)), ('Strikeouts', '@' + str(14)), ('Saves', '@' + str(8))])
   elif(stat == 3):
@@ -595,7 +595,7 @@ def plot_2pitcher_1stat(playerID1, playerID2, stat):
     hover = HoverTool(tooltips=[(stat_name,'@' + str(stat)), ('Year', '@Year'), ('Wins', '@' + str(2)), ('Losses', '@' + str(3)), ('ERA', '@' + str(16)), ('Saves', '@' + str(8))])
   else:
     hover = HoverTool(tooltips=[(stat_name,'@' + str(stat)), ('Year', '@Year'), ('Wins', '@' + str(2)), ('Losses', '@' + str(3)), ('ERA', '@' + str(16)), ('Strikeouts', '@' + str(14)), ('Saves', '@' + str(8))])
-        
+
   p.add_tools(hover)
   controls = WidgetBox(stat_selection)
   layout = row(controls, p)
@@ -617,7 +617,7 @@ def plot_2batter_1stat_career(playerID1, playerID2, stat):
   p.line(x='CareerYear', y='interest', source=src1, line_width=3, line_color='green')
   p.circle(x='CareerYear', y='interest', source=src2, size=8, color='blue', alpha=0.8, legend=player2_name)
   p.line(x='CareerYear', y='interest', source=src2, line_width=3, line_color='blue')
-  
+
   def update(attr, old, new):
     new_src1 = all_stats_dict_to_src_batter(get_batter_all_stats(playerID1), new+2)
     new_src2 = all_stats_dict_to_src_batter(get_batter_all_stats(playerID2), new+2)
@@ -625,7 +625,7 @@ def plot_2batter_1stat_career(playerID1, playerID2, stat):
     src2.data.update(new_src2.data)
     p.title.text=player1_name+' and ' + player2_name+ ' ' + getBattingStat(new+2)
     p.yaxis.axis_label=getBattingStat(new+2)
-  
+
     if(new+2==2):
       p.add_tools(HoverTool(tooltips=[(getBattingStat(new+2),'@' + str(new+2)), ('Year', '@Year'), ('Average', '@' + str(19)), ('HR', '@' + str(8)), ('RBI', '@' + str(9))]))
     elif (new+2 == 19):
@@ -636,11 +636,11 @@ def plot_2batter_1stat_career(playerID1, playerID2, stat):
       p.add_tools(HoverTool(tooltips=[(getBattingStat(new+2),'@' + str(new+2)), ('Year', '@Year'), ('Avg', '@' + str(19)), ('HR', '@' + str(8)), ('Games', '@' + str(2))]))
     else:
       p.add_tools(HoverTool(tooltips=[(getBattingStat(new+2),'@' + str(new+2)), ('Year', '@Year'), ('Average', '@' + str(19)), ('HR', '@' + str(8)), ('RBI', '@' + str(9)), ('Games', '@' + str(2))]))
-  
-  
-  stat_selection = RadioGroup(labels=radio_list_batting, active=stat-2)  
-  stat_selection.on_change('active', update)  
-  
+
+
+  stat_selection = RadioGroup(labels=radio_list_batting, active=stat-2)
+  stat_selection.on_change('active', update)
+
   if(stat==2):
     hover = HoverTool(tooltips=[(stat_name,'@' + str(stat)), ('Year', '@Year'), ('Average', '@' + str(19)), ('HR', '@' + str(8)), ('RBI', '@' + str(9))])
   elif (stat == 19):
@@ -659,7 +659,7 @@ def plot_2batter_1stat_career(playerID1, playerID2, stat):
   curdoc().add_root(tabs)
 
 #Plots 2 pitchers and 1 stat, detailed hover shows year, wins, losses, ERA, K's, Saves
-#Plots by career year rather than absolute year (i.e. year 0 is rookie year) 
+#Plots by career year rather than absolute year (i.e. year 0 is rookie year)
 def plot_2pitcher_1stat_career(playerID1, playerID2, stat):
   player1_name = playersDict_reverse[playerID1]
   player2_name = playersDict_reverse[playerID2]
@@ -668,11 +668,11 @@ def plot_2pitcher_1stat_career(playerID1, playerID2, stat):
   src2 = all_stats_dict_to_src_pitcher(get_pitcher_all_stats(playerID2), stat)
   p=figure(plot_width=800, plot_height=650, title = player1_name+' and ' + player2_name+ ' ' + stat_name, x_axis_label= "Year", y_axis_label=stat_name)
   p.circle(x='CareerYear', y='interest', source=src1, size=8, color='green', alpha=0.8, legend=player1_name)
-  p.line(x='CareerYear', y='interest', source=src1, line_width=3, line_color='green') 
+  p.line(x='CareerYear', y='interest', source=src1, line_width=3, line_color='green')
   p.circle(x='CareerYear', y='interest', source=src2, size=8, color='blue', alpha=0.8, legend=player2_name)
-  p.line(x='CareerYear', y='interest', source=src2, line_width=3, line_color='blue')  
-  
-  
+  p.line(x='CareerYear', y='interest', source=src2, line_width=3, line_color='blue')
+
+
   def update(attr, old, new):
     new_src1 = all_stats_dict_to_src_pitcher(get_pitcher_all_stats(playerID1), new+2)
     new_src2 = all_stats_dict_to_src_pitcher(get_pitcher_all_stats(playerID2), new+2)
@@ -681,7 +681,7 @@ def plot_2pitcher_1stat_career(playerID1, playerID2, stat):
     p.title.text=player1_name+' and ' + player2_name+ ' ' + getPitchingStat(new+2)
     p.yaxis.axis_label=getPitchingStat(new+2)
 
-    
+
     if(new+2 == 2):
       p.add_tools(HoverTool(tooltips=[(getPitchingStat(new+2),'@' + str(new+2)), ('Year', '@Year'), ('Losses', '@' + str(3)), ('ERA', '@' + str(16)), ('Strikeouts', '@' + str(14)), ('Saves', '@' + str(8))]))
     elif(new+2 == 3):
@@ -694,10 +694,10 @@ def plot_2pitcher_1stat_career(playerID1, playerID2, stat):
       p.add_tools(HoverTool(tooltips=[(getPitchingStat(new+2),'@' + str(new+2)), ('Year', '@Year'), ('Wins', '@' + str(2)), ('Losses', '@' + str(3)), ('ERA', '@' + str(16)), ('Saves', '@' + str(8))]))
     else:
       p.add_tools(HoverTool(tooltips=[(getPitchingStat(new+2),'@' + str(new+2)), ('Year', '@Year'), ('Wins', '@' + str(2)), ('Losses', '@' + str(3)), ('ERA', '@' + str(16)), ('Strikeouts', '@' + str(14)), ('Saves', '@' + str(8))]))
-  
-  stat_selection = RadioGroup(labels=radio_list_pitching, active=stat-2)  
+
+  stat_selection = RadioGroup(labels=radio_list_pitching, active=stat-2)
   stat_selection.on_change('active', update)
-  
+
   if(stat == 2):
     hover = HoverTool(tooltips=[(stat_name,'@' + str(stat)), ('Year', '@Year'), ('Losses', '@' + str(3)), ('ERA', '@' + str(16)), ('Strikeouts', '@' + str(14)), ('Saves', '@' + str(8))])
   elif(stat == 3):
@@ -710,19 +710,20 @@ def plot_2pitcher_1stat_career(playerID1, playerID2, stat):
     hover = HoverTool(tooltips=[(stat_name,'@' + str(stat)), ('Year', '@Year'), ('Wins', '@' + str(2)), ('Losses', '@' + str(3)), ('ERA', '@' + str(16)), ('Saves', '@' + str(8))])
   else:
     hover = HoverTool(tooltips=[(stat_name,'@' + str(stat)), ('Year', '@Year'), ('Wins', '@' + str(2)), ('Losses', '@' + str(3)), ('ERA', '@' + str(16)), ('Strikeouts', '@' + str(14)), ('Saves', '@' + str(8))])
-        
+
   p.add_tools(hover)
   controls = WidgetBox(stat_selection)
   layout = row(controls, p)
   tab = Panel(child=layout, title = '2 Player Stats')
   tabs = Tabs(tabs=[tab])
   curdoc().add_root(tabs)
-  
+
 
 
 
 def load_data():
   #fills playersDict{} and playersDict_reverse{}
+
   with open('People.csv', mode='r') as batting_info:
     reader=csv.DictReader(batting_info)
     for row in reader:
@@ -758,11 +759,11 @@ def one_batter_script():
     fn1=input("Enter the Player1's first name: ")
     ln1=input("Enter the Player1's last name: ")
     playerID1=search_for_player(ln1, fn1)
-  playerID1=playerID1[0]
+  #playerID1=playerID1[0]
   printBattingStats()
   stat=int(input("What stat do you want to view? (2-19) "))
   plot_1batter_1stat(playerID1, stat)
-  
+
 def one_pitcher_script():
   fn1=input("Enter the Player1's first name: ")
   ln1=input("Enter the Player1's last name: ")
@@ -771,11 +772,11 @@ def one_pitcher_script():
     fn1=input("Enter the Player1's first name: ")
     ln1=input("Enter the Player1's last name: ")
     playerID1=search_for_player(ln1, fn1)
-  playerID1=playerID1[0]
+  #playerID1=playerID1[0]
   printPitchingStats()
   stat=int(input("What stat do you want to view? (2-16) "))
-  plot_1pitcher_1stat(playerID1, stat) 
-  
+  plot_1pitcher_1stat(playerID1, stat)
+
 
 def two_batters_script():
   fn1=input("Enter the Player1's first name: ")
@@ -785,7 +786,7 @@ def two_batters_script():
     fn1=input("Enter the Player1's first name: ")
     ln1=input("Enter the Player1's last name: ")
     playerID1=search_for_player(ln1, fn1)
-  playerID1=playerID1[0]
+  #playerID1=playerID1[0]
   fn2=input("Enter the Player2's first name: ")
   ln2=input("Enter the Player2's last name: ")
   playerID2=search_for_player(ln2, fn2)
@@ -794,7 +795,7 @@ def two_batters_script():
     fn2=input("Enter the Player2's first name: ")
     ln2=input("Enter the Player2's last name: ")
     playerID2=search_for_player(ln2, fn2)
-  playerID2=playerID2[0]
+  #playerID2=playerID2[0]
   printBattingStats()
   stat=int(input("What stat do you want to view? (2-19) "))
   format=input("Would you like to compare by absolute year (A/a) or career year(C/c)")
@@ -811,7 +812,7 @@ def two_pitchers_script():
     fn1=input("Enter the Player1's first name: ")
     ln1=input("Enter the Player1's last name: ")
     playerID1=search_for_player(ln1, fn1)
-  playerID1=playerID1[0]
+  #playerID1=playerID1[0]
   fn2=input("Enter the Player2's first name: ")
   ln2=input("Enter the Player2's last name: ")
   playerID2=search_for_player(ln2, fn2)
@@ -820,7 +821,7 @@ def two_pitchers_script():
     fn2=input("Enter the Player2's first name: ")
     ln2=input("Enter the Player2's last name: ")
     playerID2=search_for_player(ln2, fn2)
-  playerID2=playerID2[0]
+  #playerID2=playerID2[0]
   printPitchingStats()
   stat=int(input("What stat do you want to view? (2-25) "))
   format=input("Would you like to compare by absolute year (A/a) or career year(C/c)")
@@ -828,7 +829,7 @@ def two_pitchers_script():
     plot_2pitcher_1stat(playerID1, playerID2, stat)
   elif format == 'C' or format == 'c':
     plot_2pitcher_1stat_career(playerID1, playerID2, stat)
-    
+
 
 
 
@@ -847,5 +848,3 @@ elif b_or_p == 'p' or b_or_p == 'P':
     one_pitcher_script()
   elif num_players == "2":
     two_pitchers_script()
-
-   

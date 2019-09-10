@@ -6,7 +6,7 @@ Statistics are available from between 1870 and 2017.
 This program uses Bokeh for data visualization in Python.
 
 ![HR Graph](hr_br.png)
-Format: ![Alt Text](url)
+
 
 To use the program:
 1. Run the server. In the command line type: bokeh serve --show main.py

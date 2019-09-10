@@ -5,6 +5,9 @@ This program allows you to graphically view statistics from one or two MLB playe
 Statistics are available from between 1870 and 2017.
 This program uses Bokeh for data visualization in Python.
 
+![HR Graph](hr_br.png)
+Format: ![Alt Text](url)
+
 To use the program:
 1. Run the server. In the command line type: bokeh serve --show main.py
 2. Follow the prompts on the command line: choose batters or pitchers, 1 or 2 players, choose the players, default statistic, and year type

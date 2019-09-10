@@ -18,6 +18,7 @@ battersAllStats={}      #key is ID, year; definition is all other stats
 pitchersAllStats={}     #key is ID, year; definition is all other stats
 
 playersYearToYear={}    #key is ID, year; definition is the year of that player's career
+playersYearToYeardf=pd.read_csv('player_year_year.csv')
 
 #Used for radio buttons
 radio_list_batting=['G', 'AB', 'R', 'H', '2B', '3B', 'HR', 'RBI', 'SB', 'CS', 'BB', 'SO', 'IBB', 'HBP', 'SH', 'SF', 'GIDB', 'Avg']
@@ -239,7 +240,7 @@ def get_batter_all_stats(playerID):
   for akey in battersAllStats.keys():
     if akey[0] == playerID:
       yearlyStat[iint(akey[1])] = list(battersAllStats[akey]) #gets all the stats from the player's year
-      yearlyStat[iint(akey[1])].append(playersYearToYear[akey])
+      yearlyStat[iint(akey[1])].append(int(playersYearToYeardf[(playersYearToYeardf['year']==akey[1])&(playersYearToYeardf['playerID']==akey[0])]['careerYear']))
       for i in range(2, 19):
         yearlyStat[iint(akey[1])][i]= iint(yearlyStat[iint(akey[1])][i])
       yearlyStat[iint(akey[1])][19] = yearlyStat[iint(akey[1])][19] #sets batting average
@@ -252,7 +253,7 @@ def get_pitcher_all_stats(playerID):
   for akey in pitchersAllStats.keys():
     if akey[0] == playerID:
       yearlyStat[iint(akey[1])] = list(pitchersAllStats[akey]) #gets all the stats from the player's year
-      yearlyStat[iint(akey[1])].append(playersYearToYear[akey])
+      yearlyStat[iint(akey[1])].append(int(playersYearToYeardf[(playersYearToYeardf['year']==akey[1])&(playersYearToYeardf['playerID']==akey[0])]['careerYear']))
       for i in range(2, 15):
         yearlyStat[iint(akey[1])][i]= iint(yearlyStat[iint(akey[1])][i])
       yearlyStat[iint(akey[1])][15] = yearlyStat[iint(akey[1])][15] #sets BAOpp
@@ -749,6 +750,9 @@ def load_data():
     reader=csv.DictReader(player_years)
     for row in reader:
       playersYearToYear[(row['playerID'], int(row['year']))] = int(row['careerYear'])
+  # print(playersYearToYeardf.head(5))
+  # print(playersYearToYeardf[(playersYearToYeardf['year']==2004)&(playersYearToYeardf['playerID']=='aardsda01')])
+
 
 
 
